@@ -19,6 +19,7 @@ const { google } = require("googleapis");
 
 /** Path to your Google service account JSON key file */
 const GOOGLE_SERVICE_ACCOUNT_JSON = "./modified-shape-392220-614a2fac5398.json";
+console.log({GOOGLE_SERVICE_ACCOUNT_JSON})
 /** Bunny.net storage zone name */
 const BUNNY_STORAGE_ZONE = "requiza";
 /** Bunny.net storage API key */
