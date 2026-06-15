@@ -30,6 +30,9 @@ const BUNNY_HOSTNAME = "storage.bunnycdn.com";
 const BUNNY_CDN_URL = "https://requiza.b-cdn.net";
 const BUNNY_DESTINATION_FOLDER = "Academy/Video/Lessons";
 
+const BUNNY_STREAM_LIBRARY_ID = "636044";
+const BUNNY_STREAM_API_KEY = "86d2c38c-9c4f-4a05-a4ea7e55d8c8-12d8-466a";
+
 // ─── Bunny helpers ────────────────────────────────────────────────────────────
 
 async function uploadBufferToBunny(buffer, folder, filename) {

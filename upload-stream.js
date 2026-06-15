@@ -5,20 +5,22 @@
  * them to a Bunny.net STREAM library (instead of a storage zone).
  *
  * Usage:
- *   node syncDriveToBunnyStream.js <DRIVE_FOLDER_ID> [MAX_NUMBER]
+ *   node syncDriveToBunnyStream.js <DRIVE_FOLDER_ID> [NUMBER]
  *
- * MAX_NUMBER (optional):
+ * NUMBER (optional):
  *   Many lesson filenames contain a number (e.g. "Lesson 12 - Intro.mp4").
- *   If MAX_NUMBER is given, any video whose filename number is GREATER than
- *   MAX_NUMBER is skipped — i.e. only videos numbered <= MAX_NUMBER are
- *   uploaded. If omitted, all videos are considered.
+ *   If NUMBER is given, only videos whose filename number is GREATER THAN
+ *   NUMBER are uploaded — i.e. videos numbered <= NUMBER are skipped. This
+ *   is meant for resuming a batch upload: if lessons 1-12 are already done,
+ *   pass 12 to only process lesson 13 onward. If omitted, all videos are
+ *   considered.
  *
  *   CAVEAT: this relies on extractNumberFromName() finding exactly one
  *   meaningful number in the filename. If a filename has multiple numbers
  *   (e.g. "Module 2 - Lesson 12.mp4", or a date like "2024"), the FIRST
  *   number found is used — which may not be the one you intend. Files with
- *   NO number in the name are always uploaded regardless of MAX_NUMBER,
- *   since there's nothing to compare. Double-check extractNumberFromName()
+ *   NO number in the name are ALWAYS uploaded regardless of NUMBER, since
+ *   there's nothing to compare. Double-check extractNumberFromName()
  *   against your actual filenames before relying on this filter, and
  *   consider doing a dry run first (see DRY_RUN below).
  *
@@ -202,18 +204,18 @@ function extractNumberFromName(filename) {
 
 async function main() {
   const rootFolderId = process.argv[2];
-  const maxNumberArg = process.argv[3];
+  const numberArg = process.argv[3];
 
   if (!rootFolderId) {
-    console.error("Usage: node syncDriveToBunnyStream.js <DRIVE_FOLDER_ID> [MAX_NUMBER]");
+    console.error("Usage: node syncDriveToBunnyStream.js <DRIVE_FOLDER_ID> [NUMBER]");
     process.exit(1);
   }
 
-  let maxNumber = null;
-  if (maxNumberArg !== undefined) {
-    maxNumber = parseInt(maxNumberArg, 10);
-    if (Number.isNaN(maxNumber) || maxNumber < 0) {
-      console.error(`Invalid MAX_NUMBER: "${maxNumberArg}" (must be a non-negative integer)`);
+  let minNumber = null;
+  if (numberArg !== undefined) {
+    minNumber = parseInt(numberArg, 10);
+    if (Number.isNaN(minNumber) || minNumber < 0) {
+      console.error(`Invalid NUMBER: "${numberArg}" (must be a non-negative integer)`);
       process.exit(1);
     }
   }
@@ -234,19 +236,31 @@ async function main() {
   const allVideos = await collectVideos(drive, rootFolderId);
   console.log(`Found ${allVideos.length} video(s) total in the folder.`);
 
-  if (startAfterIndex > 0) {
-    console.log(
-      `⏭  Skipping the first ${startAfterIndex} video(s) per START_AFTER_INDEX=${startAfterIndex}.`
-    );
-  }
+  let videos = allVideos;
 
-  const videos = allVideos.slice(startAfterIndex);
-  console.log(`Will attempt ${videos.length} video(s) (indices ${startAfterIndex + 1}–${allVideos.length}).\n`);
+  if (minNumber !== null) {
+    videos = allVideos.filter((video) => {
+      const num = extractNumberFromName(video.name);
+      // Files with no detectable number are always kept, since there's
+      // nothing to compare against.
+      return num === null || num > minNumber;
+    });
+
+    const excluded = allVideos.length - videos.length;
+    console.log(
+      `🔢 Only uploading videos numbered > ${minNumber} (filenames with no number are always included).`
+    );
+    console.log(`   Skipping ${excluded} video(s), keeping ${videos.length}.\n`);
+  } else {
+    console.log("");
+  }
 
   if (videos.length === 0) {
     console.log("Nothing to do. Exiting.");
     return;
   }
+
+  console.log(`Will attempt ${videos.length} video(s) (of ${allVideos.length} total).\n`);
 
   // ── 2. Upload each video via the Stream API ─────────────────────────────
   let uploaded = 0;
@@ -255,8 +269,7 @@ async function main() {
 
   for (let i = 0; i < videos.length; i++) {
     const video = videos[i];
-    const overallIndex = startAfterIndex + i + 1;
-    const prefix = `[${overallIndex}/${allVideos.length}]`;
+    const prefix = `[${i + 1}/${videos.length}]`;
 
     console.log(`${prefix} ${video.name}`);
 
