@@ -10,6 +10,8 @@
  * Prerequisites:
  *   npm install googleapis
  */
+const BUNNY_STREAM_LIBRARY_ID = process.env.id//"636044";
+const BUNNY_STREAM_API_KEY = process.env.k //"86d2c38c-9c4f-4a05-a4ea7e55d8c8-12d8-466a";
 
 const fs = require("fs");
 const path = require("path");

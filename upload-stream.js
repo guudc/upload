@@ -243,7 +243,8 @@ async function main() {
       const num = extractNumberFromName(video.name);
       // Files with no detectable number are always kept, since there's
       // nothing to compare against.
-      return num === null || num > minNumber;
+      //return num === null || num > minNumber;
+      return num === minNumber;
     });
 
     const excluded = allVideos.length - videos.length;
